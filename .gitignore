@@ -5,5 +5,5 @@
 .Renviron
 renv/library/*
 stock_table.html
-
+raw-data/*
 .DS_Store

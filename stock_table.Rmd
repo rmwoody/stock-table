@@ -18,19 +18,30 @@ library(ggplot2)
 library(lubridate)
 library(sparkline)
 library(stringr)
+library(purrr)
+source("utils.R")
+#http://jsdatav.is/chap03.html
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
 
 ## Stock Data
 
 ```{r cars}
 stocks <- read_csv("./data/stocks.csv") 
-stocks <- stocks %>% mutate_if(is.numeric, ~round(.x,2))
-preview <- stocks %>% group_by(ticker) %>% arrange(desc(date)) %>% group_modify(~head(.x,80))
+
+min_date <- max(stocks$date) %m+% years(-6)
+
+stocks <- 
+  stocks %>% subset(date >= min_date) %>%
+  mutate_if(is.numeric, ~round(.x,2))
+
+preview <- 
+  stocks %>% 
+  group_by(ticker) %>% 
+  arrange(desc(date)) %>% group_modify(~head(.x,80))
+
 reactable(preview %>% mutate_if(is.numeric, ~round(.x,5)))
 ```
-
 
 ```{r}
 # Verify the data is pretty clean
@@ -39,53 +50,33 @@ stocks %>%
   subset(date >= "2013-08-24") %>% 
   group_by(ticker) %>% 
   summarise(dates = length(unique(date)),
-            first = min(date))
+            first = min(date)) %>%
+  arrange(dates)
 # Pay Pal is the exception, has less days.# 793
+```
 
+```{r}
 selected_stocks <- read_csv("./data/top_50.csv") %>% mutate(Symbol = str_trim(Symbol))
-
-stock_names <- sapply(selected_stocks[['Name']],
-                      function(x,y){y}, 
-                      y = selected_stocks$Symbol,simplify = FALSE)
 stock_names <- selected_stocks$Name
 names(stock_names) <- selected_stocks$Symbol
-stock_names
-purrr::pluck(stock_names,"AAPL")
 ```
 
+
+
 ```{r}
-preview
-```
-```{r}
-min_date <- max(stocks$date) %m+% years(-6)
-stocks <- stocks %>% subset(date >= min_date)
+
 lag_levels <- c("1 Week","1 Month","3 Months","6 Months","1 Year","2 Years","5 Years")
-
 framework <- 
   stocks %>% 
   ungroup() %>%
   mutate(lag = factor(rep("1 Month", nrow(.)), levels = lag_levels))%>%
   expand(ticker,lag) 
 
-stocks_l <- framework %>% left_join(stocks, by = "ticker")
 ```
 
 
 ```{r}
 
-convert_lag <- function(gdf,end_date){
-  lag <- str_to_lower(unique(gdf$lag)[1])
-  if (str_detect(lag,"week")){
-    start_date <- end_date %m+% weeks(-1 * str_split(lag, " ")[[1]][1] %>% as.integer())
-  }else if(str_detect(lag,"month")){
-    start_date <- end_date %m+% months(-1 * str_split(lag, " ")[[1]][1] %>% as.integer())
-  }
-  else if(str_detect(lag,"year")){
-    start_date <- end_date %m+% years(-1 * str_split(lag, " ")[[1]][1] %>% as.integer())
-  }
-  gdf$start_date <- rep(start_date,dim(gdf)[1])
-  gdf
-}
 max_date <- as.Date("2018-08-24")
 xf <- framework %>% 
   left_join(preview, by = "ticker") %>% 
@@ -95,60 +86,16 @@ xf <- framework %>%
   arrange(ticker,lag,date) %>%
   ungroup() %>%
   group_by(ticker,lag) %>%
-  summarise(close_values = list(list("close" = close, "date"= date)),
-            close_hist = list(close),
-            close_dates = list(date))%>% 
+  summarise(close_values = list(list("close" = close, "date"= date)))%>% 
   ungroup()
-#mutate(close_values = merge_columns(close_hist,close_dates))%>% 
 
-list(1,2,3) %>% setNames(list("a","b","c"))
-xf
-merge_columns <- function(col1,col2){
-  col1 <- col1[[1]]
-  col2 <- col2[[1]]
-  names(col2) <- col2 %>% unlist() %>% as.character()
-  list(col1)
-}
-list("a","b","c") %>% unlist() %>% as.character()
-xf$close_values[1][[1]]
-xf$close_values[1]$date
-
-xf
+xf$close_values2 <- xf$close_values
+xf$change <-
+sapply(xf$close_values, function(x){
+  round((pluck(x,"close") %>% tail(1) - pluck(x,"close")[1]) / pluck(x,"close")[1],4)
+})
 ```
 
-```{r}
-build_sparkline <- function(nested_values){
-  
-  if (pluck(nested_values, 1,"close")[1] >= tail(pluck(nested_values, 1,"close"),1)){
-    color = "red"
-    fillColor = "#ff020282"
-  }else{
-    color = "#0ddd0d" #green"
-    fillColor = "#193b05c4"
-  }
-  
-  spk_composite(sparkline(pluck(nested_values, 1,"close"),
-                          height = "50px",
-                          width = "150",
-                          fillColor = fillColor,
-                          type = "line",
-                          lineColor = color,
-                          lineWidth = 2,
-                          chartRangeMin = min(pluck(nested_values, 1,"close")),
-                          chartRangeMax = max(pluck(nested_values, 1,"close"))
-                          ),
-                sparkline(pluck(nested_values, 1,"date"),
-                          type="bar",
-                          fillColor = FALSE,
-                          lineWidth = 1,
-                          lineColor ='black'
-                )
-  )
-}
-
-xf$close_values[1]
-build_sparkline(xf$close_values[1])
-```
 
 
 
@@ -174,46 +121,43 @@ div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-
                   cell = function(value){
                     list(p(value,style = "font-weight: bold;"),
                          p(purrr::pluck(stock_names,value),style = "color:#a8a8a8;")
-                         
                     )
-                    
                   }
                 ),
-                close_hist = colDef(
+                close_values = colDef(
                   name = "Closing Value",
                   cell = function(values) {
-                    if (values[1] >= tail(values,1)){
-                      color = "red"
-                      fillColor = "#ff020282"
-                    }else{
-                      color = "#0ddd0d" #green"
-                      fillColor = "#193b05c4"
-                    }
-                    
-                    sparkline(values,
-                              height = "50px",
-                              width = "150",
-                              fillColor = fillColor,
-                              
-                              type = "line",
-                              lineColor = color,
-                              lineWidth = 2,
-                              chartRangeMin = min(values),
-                              chartRangeMax = max(values))
+                    build_sparkline(values)
+                  }
+                ),
+                close_values2 = colDef(
+                  name = "Closing Value",
+                  cell = function(values) {
+                    build_sparkline_2(values)
                   }
                 ),
                 
                 lag = colDef(show = FALSE),
+                change = colDef(name = "Change",
+                                align = "center",
+                                style = "padding-top:25px",
+                                cell = function(value){
+                                  100 * value
+                                }
+                                )
+
+          
                 #close_values = colDef(show = FALSE),
-                close_dates = colDef(show = FALSE)
+                #close_dates = colDef(show = FALSE)
               ))
 )
+
 
 
 ```
 
 
-```{r}
+```{r,eval=FALSE}
 sl1 <- sparkline(
   c(5,4,5,-2,0,3),
   type='bar',
@@ -235,7 +179,6 @@ sl2 <- sparkline(
 )
 
 
-
 # add sparkline as a composite
 spk_composite(sl1, sl2)
 
@@ -252,36 +195,119 @@ spk_composite(
   )
 )
 
-# add combination of sparkline and options as a composite
-spk_composite(
-  sl1,
-  sl2,
-  options = list(
-    type="box"
+
+```
+```{r,eval = FALSE}
+jdata <- list(list(
+    "date"="2018-01-01",
+    
+    "close" = 1),
+    list(
+    "date"="2018-01-02",
+    
+    "close" = 2))
+
+spk_tool <- function(labels) {
+  htmlwidgets::JS(
+    sprintf(
+"function(sparkline, options, field){
+  return %s[field[0].offset];
+}",
+    jsonlite::toJSON(labels)
+    )
+  )
+}
+
+sv <- sparkline(
+  preview %>% select(close,open),
+  #pluck(xf$close_values, 1,"close"),
+  type="line",
+  tooltipFormat =  '{{close}}: ${{y}}',
+  lineWidth = 2,
+  fillColor = FALSE,
+  lineColor ='red'
+)
+
+
+jsonlite::toJSON(c(1,3,5,3,8), seq.Date(as.Date("2015-01-01"),by="month",length.out =5) %>% as.character())
+
+library(xts)
+ap <- as.xts(AirPassengers)
+ t(mapply(
+      function(x,y){c(as.numeric(as.Date(x)),y)},
+      index(ap),
+      as.vector(ap[,1])
+    ))
+matrix(preview$date,preview$close,preview)
+
+sparkline(
+  c(1,3,5,3,8),
+  type="line", 
+  tooltipFormatter = htmlwidgets::JS(
+    sprintf(
+      "function(sp, options, fld){
+  debugger;
+  return %s[fld.x] + '<br/>';
+}",
+      jsonlite::toJSON(
+        #paste(c(1,3,5,3,8),
+        format(
+          paste(preview$close,preview$date, sep = "<br>")[1:5]
+        )
+      )
+    )
   )
 )
+
+seq.Date(as.Date("2015-01-01"),by="month",length.out =5)
+paste(preview$close,preview$date, sep = "<br>")[1:4]
+
+sv
 ```
 
-```{r}
-sv <- sparkline(
-  pluck(xf$close_values, 1,"close"),
-  type="line",
-  lineWidth = 2,
-  fillColor = FALSE,
-  lineColor ='red'
-)
 
-sv2 <- sparkline(
-  pluck(xf$close_values, 1,"date"),
-  type="bar",
-  fillColor = FALSE,
-  lineWidth = 2,
-  lineColor ='red'
+
+
+```{r,eval = FALSE}
+library(formattable)
   
+  mtcars %>%
+    group_by(cyl) %>%
+    summarise(
+      hp = spk_chr(
+        hp, type="box",
+        chartRangeMin=0, chartRangeMax=max(mtcars$hp)
+      ),
+      mpg = spk_chr(
+        mpg, type="box",
+        chartRangeMin=0, chartRangeMax=max(mtcars$mpg)
+      )
+    )
+  
+  
+  
+spk_tool <- function(labels) {
+  htmlwidgets::JS(
+    sprintf(
+"function(sparkline, options, field){
+  return %s[field[0].offset];
+}",
+    jsonlite::toJSON(labels)
+    )
+  )
+}
+spark_data1<-tribble(
+  ~id,  ~spark,
+#### use sparkline::spk_chr helper
+####   note spk_chr build for easy usage with dplyr, summarize
+  "a", spk_chr(1:3,type="bar", tooltipFormatter=spk_tool(c("C","D","E"))),
+  "b", spk_chr(3:1,type="bar",tooltipFormatter=spk_tool(c("C","D","E")))
 )
 
-
+HTML(spk_chr(1:3,type="line", tooltipFormatter=spk_tool(c("C","D","E"))))
 ```
+
+
 
 
 
