@@ -72,13 +72,13 @@ framework <-
   ungroup() %>%
   mutate(lag = factor(rep("1 Month", nrow(.)), levels = lag_levels))%>%
   expand(ticker,lag) 
-
 ```
 
 
 ```{r,include = explain}
 
 max_date <- as.Date("2018-08-24")
+
 xf <- framework %>% 
   left_join(preview, by = "ticker") %>% 
   group_by(lag) %>%
@@ -87,29 +87,24 @@ xf <- framework %>%
   arrange(ticker,lag,date) %>%
   ungroup() %>%
   group_by(ticker,lag) %>%
-  summarise(close_values = list(list("close" = close, "date"= date)),
-            volume_values = list(list("volume" = volume, "date"= date)))%>% 
+  summarise(volume_values = list(list("volume" = volume, "date"= date)),
+            close_values = list(list("close" = close, "date"= date))) %>% 
   ungroup()
 
-xf$close_values2 <- xf$close_values
 xf$change <-
-sapply(xf$close_values, function(x){
-  round((pluck(x,"close") %>% tail(1) - pluck(x,"close")[1]) / pluck(x,"close")[1],4)
-})
+  sapply(xf$close_values, function(x){
+    round((pluck(x,"close") %>% tail(1) - pluck(x,"close")[1]) / pluck(x,"close")[1],4)
+  })
+
 ```
 
 
 
 ```{r}
 
-stock_theme <- reactableTheme(backgroundColor = "black",
-                              color = "white"
-                              #style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;"'
-)
+stock_theme <- reactableTheme(backgroundColor = "black", color = "white")
 
-#red option #6d0500
-
-sdf <- SharedData$new(xf %>% select(-close_values))
+sdf <- SharedData$new(xf)
 div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;background-color:black;color:white;padding:20px;',
     h2(class = "title", "Stocks - Top 50"),
     filter_select("ticker", "Ticker", sdf, ~ticker),
@@ -126,49 +121,31 @@ div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-
                     )
                   }
                 ),
-                close_values2 = colDef(
-                  name = "Closing Value",
-                  sortable = FALSE,
-                  cell = function(values) {
-                    build_sparkline_2(values)
-                  }
-                ),
-                
-                lag = colDef(show = FALSE),
-                change = colDef(name = "Change",
-                                align = "center",
-                                style = "padding-top:25px",
-                                cell = function(value){
-                                  if(value<0){
-                                   tag_type <- "tag num-neg"
-                                  }else if(value>0){
-                                    tag_type <- "tag num-pos"
-                                  }
-                                  else if (value==0){
-                                    tag_type <- "tag num-zero"
-                                  }
-                                  
-                                  if(value<0){
-                                   prefix <- "-"
-                                  }else if(value>0){
-                                    prefix <- "+"
-                                  }
-                                  else if (value==0){
-                                    prefix <- " "
-                                  }
-                                  
-                                  div(class = tag_type, paste0(prefix,100 * abs(value)," %"))
-                                }
-                                ),
                 volume_values = colDef(
                   name = "Volume",
                   sortable = FALSE,
                   cell = function(values) {
                     volume_sparkline(values)
                   }
-                  )
-              ))
-)
+                ),
+                close_values = colDef(
+                  name = "Closing Value",
+                  sortable = FALSE,
+                  cell = function(values) {
+                    build_sparkline_2(values)
+                  }
+                ),
+                lag = colDef(show = FALSE),
+                change = colDef(name = "Change",
+                                align = "center",
+                                style = "padding-top:25px",
+                                cell = function(value){
+                                  stock_delta(value)
+                                }
+                                )
+                )
+              )
+    )
 
 
 

@@ -74,6 +74,30 @@ volume_sparkline <- function(nested_values){
   )
 }
 
+stock_delta <- function(value){
+  if(value<0){
+    tag_type <- "tag num-neg"
+  }else if(value>0){
+    tag_type <- "tag num-pos"
+  }
+  else if (value==0){
+    tag_type <- "tag num-zero"
+  }
+  
+  if(value<0){
+    prefix <- "-"
+  }else if(value>0){
+    prefix <- "+"
+  }
+  else if (value==0){
+    prefix <- " "
+  }
+  
+  div(class = tag_type, paste0(prefix,100 * abs(value)," %"))
+  
+}
+
+
 
 
 convert_lag <- function(gdf,end_date){
