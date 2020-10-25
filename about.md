@@ -1,0 +1,2 @@
+This table is inspired by the [recipes](https://recipes.tidymodels.org/) package which always elicits hunger with it's cooking themed functions. There are already quite a few R "cookbooks" out there, so I figured...why not make an actual one? Online recipe websites always hide the most critical information, namely ingredients and instructions, behind walls of unrelated anecdotes and revenue generating advertisements. To simplify the process, I decided to summarize the information for recipes in a single place....and what could be better for that than a table!? 
+

@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+renv/library/*
+stock_table.html
+
+.DS_Store
