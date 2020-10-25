@@ -1,9 +1,10 @@
+# Stock Table
 
-
-# Cookbook Table  <img src = './logos/hex- (1).png'  width = "20%" align = "right">
-
-This repo contains the code and assets used to generate a cookbook table submitted to the RStudio 2020 table [contest](https://blog.rstudio.com/2020/09/15/announcing-the-2020-rstudio-table-contest/). This particular table uses the [reactable](https://glin.github.io/reactable/) package to succinctly display a set of recipes along with instructions and helpful information. The table itself was inspired by the food themed functions in the recipes package.
+This repo contains the code and assets used to generate a stock table submitted to the RStudio 2020 table [contest](https://blog.rstudio.com/2020/09/15/announcing-the-2020-rstudio-table-contest/). This particular table uses the [reactable](https://glin.github.io/reactable/) package to succinctly display historical stock data with options to choose a time lag as well as the specific companies to view.
 
 ## Table Preview
 
-Insert some gif here that has the table info ect...
+A preview of the table is shown below. It has options to include a subset of companies and lags.
+<br>
+
+![](example.png)

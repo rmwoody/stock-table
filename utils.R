@@ -61,6 +61,21 @@ build_sparkline_2 <- function(nested_values){
 
 
 
+volume_sparkline <- function(nested_values){
+  sparkline(pluck(nested_values,"volume"),
+            height = "50px",
+            width = "150",
+            fillColor = "black",
+            type = "line",
+            lineColor = "#ffc00d",
+            lineWidth = 2,
+            chartRangeMin = min(pluck(nested_values,"volume")),
+            chartRangeMax = max(pluck(nested_values,"volume"))
+  )
+}
+
+
+
 convert_lag <- function(gdf,end_date){
   lag <- str_to_lower(unique(gdf$lag)[1])
   if (str_detect(lag,"week")){

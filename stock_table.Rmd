@@ -21,14 +21,15 @@ library(stringr)
 library(purrr)
 source("utils.R")
 #http://jsdatav.is/chap03.html
-knitr::opts_chunk$set(echo = TRUE)
+include_code <- FALSE
+explain <- FALSE
+knitr::opts_chunk$set(echo = include_code, message = FALSE, warning = FALSE)
 ```
 
 ## Stock Data
 
-```{r cars}
+```{r, include = explain}
 stocks <- read_csv("./data/stocks.csv") 
-
 min_date <- max(stocks$date) %m+% years(-6)
 
 stocks <- 
@@ -43,7 +44,7 @@ preview <-
 reactable(preview %>% mutate_if(is.numeric, ~round(.x,5)))
 ```
 
-```{r}
+```{r,include = explain}
 # Verify the data is pretty clean
 min(stocks$date)
 stocks %>% 
@@ -55,7 +56,7 @@ stocks %>%
 # Pay Pal is the exception, has less days.# 793
 ```
 
-```{r}
+```{r, include = explain}
 selected_stocks <- read_csv("./data/top_50.csv") %>% mutate(Symbol = str_trim(Symbol))
 stock_names <- selected_stocks$Name
 names(stock_names) <- selected_stocks$Symbol
@@ -63,7 +64,7 @@ names(stock_names) <- selected_stocks$Symbol
 
 
 
-```{r}
+```{r, include = explain}
 
 lag_levels <- c("1 Week","1 Month","3 Months","6 Months","1 Year","2 Years","5 Years")
 framework <- 
@@ -75,7 +76,7 @@ framework <-
 ```
 
 
-```{r}
+```{r,include = explain}
 
 max_date <- as.Date("2018-08-24")
 xf <- framework %>% 
@@ -86,7 +87,8 @@ xf <- framework %>%
   arrange(ticker,lag,date) %>%
   ungroup() %>%
   group_by(ticker,lag) %>%
-  summarise(close_values = list(list("close" = close, "date"= date)))%>% 
+  summarise(close_values = list(list("close" = close, "date"= date)),
+            volume_values = list(list("volume" = volume, "date"= date)))%>% 
   ungroup()
 
 xf$close_values2 <- xf$close_values
@@ -98,7 +100,6 @@ sapply(xf$close_values, function(x){
 
 
 
-
 ```{r}
 
 stock_theme <- reactableTheme(backgroundColor = "black",
@@ -106,12 +107,13 @@ stock_theme <- reactableTheme(backgroundColor = "black",
                               #style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;"'
 )
 
+#red option #6d0500
 
-
-sdf <- SharedData$new(xf)
-div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;',
+sdf <- SharedData$new(xf %>% select(-close_values))
+div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;background-color:black;color:white;padding:20px;',
+    h2(class = "title", "Stocks - Top 50"),
     filter_select("ticker", "Ticker", sdf, ~ticker),
-    filter_select("lag", "Time Period", sdf, ~lag,multiple = FALSE),
+    filter_checkbox("lags", "Time Period", sdf, ~lag, allLevels = FALSE, inline = TRUE),
     reactable(sdf,
               theme = stock_theme,
               columns = list(
@@ -124,14 +126,9 @@ div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-
                     )
                   }
                 ),
-                close_values = colDef(
-                  name = "Closing Value",
-                  cell = function(values) {
-                    build_sparkline(values)
-                  }
-                ),
                 close_values2 = colDef(
                   name = "Closing Value",
+                  sortable = FALSE,
                   cell = function(values) {
                     build_sparkline_2(values)
                   }
@@ -142,172 +139,38 @@ div(style = 'font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-
                                 align = "center",
                                 style = "padding-top:25px",
                                 cell = function(value){
-                                  100 * value
+                                  if(value<0){
+                                   tag_type <- "tag num-neg"
+                                  }else if(value>0){
+                                    tag_type <- "tag num-pos"
+                                  }
+                                  else if (value==0){
+                                    tag_type <- "tag num-zero"
+                                  }
+                                  
+                                  if(value<0){
+                                   prefix <- "-"
+                                  }else if(value>0){
+                                    prefix <- "+"
+                                  }
+                                  else if (value==0){
+                                    prefix <- " "
+                                  }
+                                  
+                                  div(class = tag_type, paste0(prefix,100 * abs(value)," %"))
                                 }
-                                )
-
-          
-                #close_values = colDef(show = FALSE),
-                #close_dates = colDef(show = FALSE)
+                                ),
+                volume_values = colDef(
+                  name = "Volume",
+                  sortable = FALSE,
+                  cell = function(values) {
+                    volume_sparkline(values)
+                  }
+                  )
               ))
 )
 
 
 
 ```
-
-
-```{r,eval=FALSE}
-sl1 <- sparkline(
-  c(5,4,5,-2,0,3),
-  type='bar',
-  barColor="#aaf",
-  chartRangeMin=-5,
-  chartRangeMax=10,
-  # set an id that will make it easier to refer
-  #  in the next sparkline
-  elementId="sparkline-for-composite"
-)
-
-sl2 <- sparkline(
-  c(4,1,5,7,9,9,8,7,6,6,4,7,8,4,3,2,2,5,6,7),
-  type="line",
-  fillColor = FALSE,
-  lineColor ='red',
-  chartRangeMin = -5,
-  chartRangeMax = 10
-)
-
-
-# add sparkline as a composite
-spk_composite(sl1, sl2)
-
-# add values and options as a composite
-spk_composite(
-  sl1,
-  values=c(4,1,5,7,9,9,8,7,6,6,4,7,8,4,3,2,2,5,6,7),
-  options = list(
-    type="line",
-    fillColor = FALSE,
-    lineColor ='red',
-    chartRangeMin = -5,
-    chartRangeMax = 10
-  )
-)
-
-
-```
-```{r,eval = FALSE}
-jdata <- list(list(
-    "date"="2018-01-01",
-    
-    "close" = 1),
-    list(
-    "date"="2018-01-02",
-    
-    "close" = 2))
-
-spk_tool <- function(labels) {
-  htmlwidgets::JS(
-    sprintf(
-"function(sparkline, options, field){
-  return %s[field[0].offset];
-}",
-    jsonlite::toJSON(labels)
-    )
-  )
-}
-
-sv <- sparkline(
-  preview %>% select(close,open),
-  #pluck(xf$close_values, 1,"close"),
-  type="line",
-  tooltipFormat =  '{{close}}: ${{y}}',
-  lineWidth = 2,
-  fillColor = FALSE,
-  lineColor ='red'
-)
-
-
-jsonlite::toJSON(c(1,3,5,3,8), seq.Date(as.Date("2015-01-01"),by="month",length.out =5) %>% as.character())
-
-library(xts)
-ap <- as.xts(AirPassengers)
- t(mapply(
-      function(x,y){c(as.numeric(as.Date(x)),y)},
-      index(ap),
-      as.vector(ap[,1])
-    ))
-matrix(preview$date,preview$close,preview)
-
-sparkline(
-  c(1,3,5,3,8),
-  type="line", 
-  tooltipFormatter = htmlwidgets::JS(
-    sprintf(
-      "function(sp, options, fld){
-  debugger;
-  return %s[fld.x] + '<br/>';
-}",
-      jsonlite::toJSON(
-        #paste(c(1,3,5,3,8),
-        format(
-          paste(preview$close,preview$date, sep = "<br>")[1:5]
-        )
-      )
-    )
-  )
-)
-
-seq.Date(as.Date("2015-01-01"),by="month",length.out =5)
-paste(preview$close,preview$date, sep = "<br>")[1:4]
-
-sv
-```
-
-
-
-
-```{r,eval = FALSE}
-library(formattable)
-  
-  mtcars %>%
-    group_by(cyl) %>%
-    summarise(
-      hp = spk_chr(
-        hp, type="box",
-        chartRangeMin=0, chartRangeMax=max(mtcars$hp)
-      ),
-      mpg = spk_chr(
-        mpg, type="box",
-        chartRangeMin=0, chartRangeMax=max(mtcars$mpg)
-      )
-    )
-  
-  
-  
-spk_tool <- function(labels) {
-  htmlwidgets::JS(
-    sprintf(
-"function(sparkline, options, field){
-  return %s[field[0].offset];
-}",
-    jsonlite::toJSON(labels)
-    )
-  )
-}
-spark_data1<-tribble(
-  ~id,  ~spark,
-#### use sparkline::spk_chr helper
-####   note spk_chr build for easy usage with dplyr, summarize
-  "a", spk_chr(1:3,type="bar", tooltipFormatter=spk_tool(c("C","D","E"))),
-  "b", spk_chr(3:1,type="bar",tooltipFormatter=spk_tool(c("C","D","E")))
-)
-
-HTML(spk_chr(1:3,type="line", tooltipFormatter=spk_tool(c("C","D","E"))))
-```
-
-
-
-
 

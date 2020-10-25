@@ -2,6 +2,59 @@
   font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-.under-sparkline {
-  color:"black";
+
+.selectize-input{
+  background-color:black;
+  border: 1px solid #b8b8b8;
 }
+
+.selectize-input > input {
+  color:white;
+}
+
+.selectize-dropdown{
+  background-color:#262626;
+  color:#a7a7a7;
+}
+
+.selectize-input.full {
+    background-color: black;
+}
+
+.selectize-input.input-active {
+    background-color: black;
+}
+
+.selectize-control.single {
+    background-color: black;
+}
+
+selectize-input input {
+    color: #ffffff;
+}
+
+.num-pos {
+    background-color: #006d00;
+}
+
+.num-neg{
+    background-color: #910000;
+}
+
+.num-zero{
+    color: hsl(121, 33%, 23%);
+    background-color: hsl(121, 33%, 86%);
+}
+
+
+.tag {
+    padding: 1px;
+    font-weight: 600;
+    color: white;
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+
