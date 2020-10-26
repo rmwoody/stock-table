@@ -2,7 +2,6 @@
   font-family: "Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-
 .selectize-input{
   background-color:black;
   border: 1px solid #b8b8b8;
@@ -54,6 +53,25 @@ selectize-input input {
     width: 50%;
     margin-left: auto;
     margin-right: auto;
+}
+
+/*Navigation Syling*/
+.tocify {
+    width: 20%;
+    max-height: 90%;
+    overflow: auto;
+    margin-left: 2%;
+    position: fixed;
+    border: 0;
+    border-radius: 0px;
+}
+
+.list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+    z-index: 2;
+    color: #1762a4;
+    background-color: #ffffff;
+    border-color: #2f5f89;
+    border-left: solid;
 }
 
 
