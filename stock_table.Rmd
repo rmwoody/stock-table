@@ -142,7 +142,8 @@ max_date <- as.Date("2018-08-24")
 
 xf <- 
   framework %>% 
-  left_join(preview, by = "ticker") %>% 
+  left_join(stocks, by = "ticker") %>% 
+  subset(ticker != "PYPL") %>%
   group_by(lag) %>%
   do(convert_lag(.,max_date)) %>%
   subset(date >= start_date & date <= max_date) %>%
