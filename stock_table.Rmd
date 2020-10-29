@@ -17,9 +17,12 @@ output:
 
 ## About
 
-This article covers the steps to create the stock table pictured below. The source data came from [kaggle](https://www.kaggle.com/ehallmar/daily-historical-stock-prices-1970-2018) and contains over 20 million rows! For the purposes
-of this table, I limited this dataset to only the top 50 companies by market capitalization found [here](http://www.iweblists.com/us/commerce/MarketCapitalization.html) .
-To get the source code and truncated data checkout the [github repo](https://github.com/rmwoody/stock-table)!
+This article covers the steps to create the stock table pictured below. The source data came from
+<a href="https://www.kaggle.com/ehallmar/daily-historical-stock-prices-1970-2018" target="_blank">Kaggle</a>
+and contains over 20 million rows! For the purposes of this table, I limited this dataset to only the top 50 companies by market capitalization found <a href="http://www.iweblists.com/us/commerce/MarketCapitalization.html" target="_blank">here</a> .
+To get the source code and truncated data checkout the  <a href="https://github.com/rmwoody/stock-table" target="_blank">github repo </a>!
+
+
 
 <img src="example.png" height="360px"/>
 
@@ -31,8 +34,7 @@ knitr::opts_chunk$set(echo = include_code, message = FALSE, warning = FALSE)
 ```
 
 To get started, make sure that you have the following libraries installed:
-```{r setup, include=FALSE}
-library(distill)
+```{r setup, include=explain}
 library(reactable)
 library(readr)
 library(dplyr)
@@ -188,7 +190,7 @@ close_sparkline <- function(nested_values){
                           fillColor = fillColor,
                           type = "line",
                           lineColor = color,
-                          lineWidth = 2,
+                          lineWidth = 1,
                           chartRangeMin = min(pluck(nested_values,"close")),
                           chartRangeMax = max(pluck(nested_values,"close")),
                           tooltipFormatter = htmlwidgets::JS(
@@ -216,7 +218,7 @@ volume_sparkline <- function(nested_values){
             fillColor = "black",
             type = "line",
             lineColor = "#ffc00d",
-            lineWidth = 2,
+            lineWidth = 1,
             chartRangeMin = min(pluck(nested_values,"volume")),
             chartRangeMax = max(pluck(nested_values,"volume"))
             )
